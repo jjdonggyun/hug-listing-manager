@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+
+  listings  Listing[]
+}
+
+enum DealType {
+  JEONSE   // 전세
+  MONTHLY  // 월세
+  SALE     // 매매
+}
+
+model Listing {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title         String
+  addressText   String?  // 사용자가 입력한 주소(상세 제외 권장)
+
+  dealType      DealType @default(JEONSE)
+  depositKrw    Int      @default(0) // 전세/월세 보증금
+  monthlyKrw    Int      @default(0) // 월세
+  salePriceKrw  Int?              // 매매가
+  status        String   @default("NEW")
+  tags          String[] @default([])
+
+  referenceUrl  String?  // 네이버 링크는 "참고 링크"로만 저장 (복제/재배포 금지)
+  externalId    String?  // 매물번호 등 (사용자 입력)
+
+  seniorLienKrw Int?     // 선순위(근저당 최고액 등 사용자 입력/등기에서 확인)
+  officialPrice Int?     // 공시가(공공데이터/사용자 입력)
+  usageType     String?  // RESIDENTIAL/OFFICE/UNKNOWN
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  notes         Note[]
+  contacts      ContactLog[]
+  appointments  Appointment[]
+  assessments   HugAssessment[]
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  listingId String   @unique
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContactLog {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  type      String   // CALL | SMS | KAKAO | VISIT | ETC
+  memo      String?
+  at        DateTime @default(now())
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  title     String
+  startAt   DateTime
+  endAt     DateTime?
+  location  String?
+  memo      String?
+}
+
+model HugAssessment {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  grade      String
+  score      Int
+  reasons    String[]
+  createdAt  DateTime @default(now())
+}

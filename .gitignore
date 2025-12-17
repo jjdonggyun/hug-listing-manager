@@ -1,0 +1,22 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# env
+.env
+.env.*
+
+# build
+dist
+build
+
+# prisma
+apps/api/prisma/dev.db
+
+# logs
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
