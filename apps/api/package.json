@@ -6,9 +6,9 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "prisma:gen": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "start:prod": "prisma migrate deploy && node dist/main.js",
+    "prisma:gen": "prisma generate --schema=prisma/schema.prisma",
+    "start:prod": "prisma migrate deploy --schema=prisma/schema.prisma && node dist/main.js",
     "lint": "eslint ."
   },
   "dependencies": {
