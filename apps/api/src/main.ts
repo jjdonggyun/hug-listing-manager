@@ -7,9 +7,20 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
   const origin = config.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
+  const rawOrigins = config.get<string>('CORS_ORIGIN') ?? '';
+  const allowedOrigins = rawOrigins.split(',').map(o => o.trim());
 
   app.enableCors({
-    origin,
+    origin: (origin, callback) => {
+      // 서버 → 서버 호출 / health check 대비
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`), false);
+    },
     credentials: true,
   });
 
