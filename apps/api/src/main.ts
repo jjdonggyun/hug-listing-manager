@@ -6,27 +6,49 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = app.get(ConfigService);
-  const origin = config.get<string>('CORS_ORIGIN') ?? 'http://localhost:5173';
-  const rawOrigins = config.get<string>('CORS_ORIGIN') ?? '';
-  const allowedOrigins = rawOrigins.split(',').map(o => o.trim());
+
+  /**
+   * CORS_ORIGIN 예시 (Render env)
+   * http://localhost:5173,https://hug-listing-manager-web.vercel.app
+   */
+  const raw = config.get<string>('CORS_ORIGIN') ?? '';
+  const allowedOrigins = raw
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // 서버 → 서버 호출 / health check 대비
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+    origin: (requestOrigin, callback) => {
+      // 서버 내부 호출 / health check
+      if (!requestOrigin) {
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked: ${origin}`), false);
+      // 정확히 일치하는 origin 허용
+      if (allowedOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      // Vercel preview (*.vercel.app) 허용하고 싶으면 이 줄 유지
+      if (/^https:\/\/.*\.vercel\.app$/.test(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      // 차단
+      return callback(
+        new Error(`CORS blocked: ${requestOrigin}`),
+        false,
+      );
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   const port = parseInt(config.get<string>('PORT') ?? '4000', 10);
   await app.listen(port);
-  // eslint-disable-next-line no-console
-  console.log(`API listening on http://localhost:${port}`);
+
+  console.log(`API listening on port ${port}`);
 }
+
 bootstrap();
